@@ -7,6 +7,12 @@ on:
     paths:
       - valheim_plug.cfg
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Test the connection without uploading the config
+        required: true
+        default: true
+        type: boolean
 
 permissions:
   contents: read
@@ -26,18 +32,26 @@ jobs:
       - name: Install FTP client
         run: sudo apt-get update && sudo apt-get install --yes lftp
 
-      - name: Upload Valheim Plus config
+      - name: Connect and optionally upload config
         env:
           HOSTHAVOC_FTP_URL: ${{ secrets.HOSTHAVOC_FTP_URL }}
           HOSTHAVOC_FTP_USERNAME: ${{ secrets.HOSTHAVOC_FTP_USERNAME }}
           HOSTHAVOC_FTP_PASSWORD: ${{ secrets.HOSTHAVOC_FTP_PASSWORD }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
         run: |
           set -euo pipefail
           : "${HOSTHAVOC_FTP_URL:?Missing HOSTHAVOC_FTP_URL}"
           : "${HOSTHAVOC_FTP_USERNAME:?Missing HOSTHAVOC_FTP_USERNAME}"
           : "${HOSTHAVOC_FTP_PASSWORD:?Missing HOSTHAVOC_FTP_PASSWORD}"
 
+          commands='set net:max-retries 2; set net:timeout 20; set sftp:auto-confirm yes; cd BepInEx/config;'
+          if [[ "$DRY_RUN" == "true" ]]; then
+            commands+=' pwd; bye'
+          else
+            commands+=' put valheim_plug.cfg -o org.bepinex.plugins.valheim_plus.cfg; bye'
+          fi
+
           lftp \
             -u "$HOSTHAVOC_FTP_USERNAME","$HOSTHAVOC_FTP_PASSWORD" \
-            -e 'set net:max-retries 2; set net:timeout 20; set sftp:auto-confirm yes; put valheim_plug.cfg -o BepInEx/config/org.bepinex.plugins.valheim_plus.cfg; bye' \
+            -e "$commands" \
             "$HOSTHAVOC_FTP_URL"
