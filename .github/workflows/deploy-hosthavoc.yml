@@ -1,0 +1,43 @@
+name: Deploy config to Host Havoc
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - valheim_plug.cfg
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-hosthavoc-config
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install FTP client
+        run: sudo apt-get update && sudo apt-get install --yes lftp
+
+      - name: Upload Valheim Plus config
+        env:
+          HOSTHAVOC_FTP_URL: ${{ secrets.HOSTHAVOC_FTP_URL }}
+          HOSTHAVOC_FTP_USERNAME: ${{ secrets.HOSTHAVOC_FTP_USERNAME }}
+          HOSTHAVOC_FTP_PASSWORD: ${{ secrets.HOSTHAVOC_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          : "${HOSTHAVOC_FTP_URL:?Missing HOSTHAVOC_FTP_URL}"
+          : "${HOSTHAVOC_FTP_USERNAME:?Missing HOSTHAVOC_FTP_USERNAME}"
+          : "${HOSTHAVOC_FTP_PASSWORD:?Missing HOSTHAVOC_FTP_PASSWORD}"
+
+          lftp \
+            -u "$HOSTHAVOC_FTP_USERNAME","$HOSTHAVOC_FTP_PASSWORD" \
+            -e 'set net:max-retries 2; set net:timeout 20; set sftp:auto-confirm yes; put valheim_plug.cfg -o BepInEx/config/org.bepinex.plugins.valheim_plus.cfg; bye' \
+            "$HOSTHAVOC_FTP_URL"
