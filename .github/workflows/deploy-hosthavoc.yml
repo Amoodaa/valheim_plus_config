@@ -44,14 +44,14 @@ jobs:
           : "${HOSTHAVOC_FTP_USERNAME:?Missing HOSTHAVOC_FTP_USERNAME}"
           : "${HOSTHAVOC_FTP_PASSWORD:?Missing HOSTHAVOC_FTP_PASSWORD}"
 
-          commands='set net:max-retries 2; set net:timeout 20; set sftp:auto-confirm yes; cd BepInEx/config;'
+          commands='set net:max-retries 1; set net:timeout 15; set sftp:auto-confirm yes; cd BepInEx/config;'
           if [[ "$DRY_RUN" == "true" ]]; then
             commands+=' pwd; bye'
           else
-            commands+=' put valheim_plug.cfg -o org.bepinex.plugins.valheim_plus.cfg; bye'
+            commands+=' put valheim_plug.cfg -o valheim_plus.cfg; bye'
           fi
 
-          lftp \
+          timeout 45s lftp \
             -u "$HOSTHAVOC_FTP_USERNAME","$HOSTHAVOC_FTP_PASSWORD" \
             -e "$commands" \
             "$HOSTHAVOC_FTP_URL"
