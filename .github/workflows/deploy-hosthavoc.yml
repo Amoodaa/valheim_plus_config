@@ -39,5 +39,5 @@ jobs:
 
           timeout 45s lftp \
             -u "$HOSTHAVOC_FTP_USERNAME","$HOSTHAVOC_FTP_PASSWORD" \
-            -e 'set net:max-retries 1; set net:timeout 15; set sftp:auto-confirm yes; cd BepInEx/config; put valheim_plug.cfg -o valheim_plus.cfg; bye' \
+            -e 'set net:max-retries 1; set net:timeout 15; set ssl:verify-certificate no; set sftp:auto-confirm yes; cd BepInEx/config; put valheim_plug.cfg -o valheim_plus.cfg; bye' \
             "$HOSTHAVOC_FTP_URL"
